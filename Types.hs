@@ -5,4 +5,8 @@ import Text.Show
 import Data.Eq
 import Data.Text
 
-newtype Problem = Problem { unProblem :: Text } deriving (Eq, Show)
+import Control.Distributed.Process.Node
+
+type HivePortal = LocalNode
+
+newtype ProblemInput = ProblemInput { unProblemInput :: Text } deriving (Eq, Show)

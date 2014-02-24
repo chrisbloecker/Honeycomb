@@ -20,6 +20,10 @@ import Network.Wai.Logger (clockDateCacher)
 import Data.Default (def)
 import Yesod.Core.Types (loggerSet, Logger (Logger))
 
+-- Imports for CloudHaskell
+import Control.Distributed.Process.Backend.SimpleLocalnet
+import Control.Distributed.Process.Node hiding (newLocalNode)
+
 -- Import all relevant handler modules here.
 -- Don't forget to add new modules to your cabal file!
 import Handler.Home
@@ -50,6 +54,7 @@ makeApplication conf = do
     -- Create the WAI application and apply middlewares
     app <- toWaiAppPlain foundation
     let logFunc = messageLoggerSource foundation (appLogger foundation)
+
     return (logWare app, logFunc)
 
 -- | Loads up any necessary settings, creates your foundation datatype, and
@@ -72,8 +77,12 @@ makeFoundation conf = do
             updateLoop
     _ <- forkIO updateLoop
 
+    -- create the local honey node which will be used to talk to Hive
+    context <- initializeBackend "localhost" "52025" initRemoteTable
+    node    <- newLocalNode context
+
     let logger = Yesod.Core.Types.Logger loggerSet' getter
-        foundation = App conf s manager logger
+        foundation = App conf s manager logger context node
 
     return foundation
 
