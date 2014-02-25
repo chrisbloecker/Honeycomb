@@ -5,7 +5,7 @@ import Types
 
 import Data.Text
 
-import Hive.Data
+import Hive.Types  (ProblemType(..))
 import Hive.Client
 
 import Control.Distributed.Process.Backend.SimpleLocalnet
@@ -16,12 +16,14 @@ import Control.Concurrent.MVar
 getSubmitR :: Handler Html
 getSubmitR = do
   (widget, enctype) <- generateFormPost problemSubmitForm
-  defaultLayout [whamlet|
-                  <h2>Submit a problem
-                  <form method=post action=@{SubmitR} enctype=#{enctype}>
-                    ^{widget}
-                    <button>Submit
-                |]
+  defaultLayout $ do
+    setTitle "Submit your problem!"
+    [whamlet|
+      <h2>Submit your problem!
+      <form method=post action=@{SubmitR} enctype=#{enctype}>
+        ^{widget}
+        <button>Submit
+    |]
 
 postSubmitR :: Handler Html
 postSubmitR = do
@@ -32,9 +34,12 @@ postSubmitR = do
       yesod    <- getYesod
       liftIO $ runProcess (honey yesod) $ solveRequest (comb yesod) TSP (unpack p) mvar 2000000
       solution <- liftIO $ takeMVar mvar
-      defaultLayout [whamlet|
-                      #{show solution}
-                    |]
+      defaultLayout $ do
+        setTitle "Solution found!"
+        [whamlet|
+          <h2>The bees have found a solution for your problem, it is:
+          <pre>#{show solution}
+        |]
     _ -> redirect SubmitR
 
 problemSubmitForm :: Form ProblemInput
