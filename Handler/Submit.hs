@@ -1,17 +1,18 @@
-module Handler.Submit where
+module Handler.Submit
+  where
+
+import Data.Text.Lazy (fromStrict)
+
+import Control.Concurrent.MVar (newEmptyMVar, takeMVar)
+import Control.Distributed.Process.Node hiding (newLocalNode)
 
 import Import
 import Types
 
-import Data.Text
+import Hive.Types  (Problem (..), ProblemType (..), Instance (..))
+import Hive.Client (solveRequest)
 
-import Hive.Types  (ProblemType(..))
-import Hive.Client
-
-import Control.Distributed.Process.Backend.SimpleLocalnet
-import Control.Distributed.Process.Node hiding (newLocalNode)
-
-import Control.Concurrent.MVar
+-------------------------------------------------------------------------------
 
 getSubmitR :: Handler Html
 getSubmitR = do
@@ -27,12 +28,12 @@ getSubmitR = do
 
 postSubmitR :: Handler Html
 postSubmitR = do
-  ((result, widget), enctype) <- runFormPost problemSubmitForm
+  ((result, _widget), _enctype) <- runFormPost problemSubmitForm
   case result of
     FormSuccess (ProblemInput p) -> do
       mvar     <- liftIO newEmptyMVar
       yesod    <- getYesod
-      liftIO $ runProcess (honey yesod) $ solveRequest (comb yesod) TSP (unpack p) mvar 2000000
+      liftIO $ runProcess (honey yesod) $ solveRequest (comb yesod) (Problem TSP (Instance . fromStrict $ p)) mvar 2000000
       solution <- liftIO $ takeMVar mvar
       defaultLayout $ do
         setTitle "Solution found!"
