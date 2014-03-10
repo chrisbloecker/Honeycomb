@@ -7,8 +7,10 @@ import Data.Text (Text)
 
 import Control.Distributed.Process.Node (LocalNode)
 
+import Hive.Types (ProblemType)
+
 -------------------------------------------------------------------------------
 
 type HivePortal = LocalNode
 
-newtype ProblemInput = ProblemInput { unProblemInput :: Text } deriving (Eq, Show)
+data ProblemInput = ProblemInput Text ProblemType         deriving (Eq, Show)

@@ -1,7 +1,10 @@
 module Handler.Submit
   where
 
+import Data.Text      (pack)
 import Data.Text.Lazy (fromStrict)
+
+import Control.Arrow ((&&&))
 
 import Control.Concurrent.MVar (newEmptyMVar, takeMVar)
 import Control.Distributed.Process.Node hiding (newLocalNode)
@@ -30,10 +33,10 @@ postSubmitR :: Handler Html
 postSubmitR = do
   ((result, _widget), _enctype) <- runFormPost problemSubmitForm
   case result of
-    FormSuccess (ProblemInput p) -> do
+    FormSuccess (ProblemInput problemInstance problemType) -> do
       mvar     <- liftIO newEmptyMVar
       yesod    <- getYesod
-      liftIO $ runProcess (honey yesod) $ solveRequest (comb yesod) (Problem TSP (Instance . fromStrict $ p)) mvar 2000000
+      liftIO $ runProcess (honey yesod) $ solveRequest (comb yesod) (Problem problemType (Instance . fromStrict $ problemInstance)) mvar 2000000
       solution <- liftIO $ takeMVar mvar
       defaultLayout $ do
         setTitle "Solution found!"
@@ -46,3 +49,7 @@ postSubmitR = do
 problemSubmitForm :: Form ProblemInput
 problemSubmitForm = renderDivs $ ProblemInput
   <$> areq textField "Problem: " Nothing
+  <*> areq (selectFieldList problemTypes) "Type: " Nothing
+    where
+      problemTypes :: [(Text, ProblemType)]
+      problemTypes = map (pack . show &&& id) [minBound..maxBound]
