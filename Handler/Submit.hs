@@ -3,7 +3,7 @@
 module Handler.Submit
   where
 
-import Data.Time      (NominalDiffTime, getCurrentTime, diffUTCTime)
+import Data.Time      (UTCTime, NominalDiffTime, getCurrentTime, diffUTCTime)
 import Data.Text      (pack)
 import Data.Text.Lazy (fromStrict)
 
@@ -13,10 +13,13 @@ import Control.Concurrent.MVar (newEmptyMVar, takeMVar)
 import Control.Distributed.Process.Node hiding (newLocalNode)
 
 import Import
-import Types
 
 import Hive.Types  (Problem (..), ProblemType (..), Instance (..), Solution (..))
 import Hive.Client (solveRequest)
+
+-------------------------------------------------------------------------------
+
+data ProblemInput = ProblemInput Textarea ProblemType UTCTime      deriving (Eq, Show)
 
 -------------------------------------------------------------------------------
 
@@ -39,7 +42,7 @@ postSubmitR = do
     FormSuccess (ProblemInput problemInstance problemType timestamp) -> do
       mvar     <- liftIO newEmptyMVar
       yesod    <- getYesod
-      liftIO $ runProcess (honey yesod) $ solveRequest (comb yesod) (Problem problemType (Instance . fromStrict $ problemInstance)) mvar 10000000
+      liftIO $ runProcess (honey yesod) $ solveRequest (comb yesod) (Problem problemType (Instance . fromStrict . unTextarea $ problemInstance)) mvar 15000000
       solution <- liftIO $ takeMVar mvar
       now      <- liftIO getCurrentTime
       let duration = diffUTCTime now timestamp
@@ -48,7 +51,7 @@ postSubmitR = do
 
 problemSubmitForm :: Form ProblemInput
 problemSubmitForm = renderDivs $ ProblemInput
-  <$> areq textField "Problem: " Nothing
+  <$> areq textareaField "Problem: " Nothing
   <*> areq (selectFieldList problemTypes) "Type: " Nothing
   <*> lift (liftIO getCurrentTime)
     where
