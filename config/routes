@@ -5,3 +5,4 @@
 
 / HomeR GET
 /submit SubmitR GET POST
+/statistics StatisticsR GET

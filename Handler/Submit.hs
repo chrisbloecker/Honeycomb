@@ -3,7 +3,9 @@
 module Handler.Submit
   where
 
-import Data.Time      (UTCTime, NominalDiffTime, getCurrentTime, diffUTCTime)
+import System.CPUTime (getCPUTime, cpuTimePrecision)
+
+--import Data.Time      (UTCTime, NominalDiffTime, getCurrentTime, diffUTCTime)
 import Data.Text      (pack)
 import Data.Text.Lazy (fromStrict)
 
@@ -19,7 +21,7 @@ import Hive.Client (solveRequest)
 
 -------------------------------------------------------------------------------
 
-data ProblemInput = ProblemInput Textarea ProblemType UTCTime      deriving (Eq, Show)
+data ProblemInput = ProblemInput Textarea ProblemType Integer      deriving (Eq, Show)
 
 -------------------------------------------------------------------------------
 
@@ -44,16 +46,16 @@ postSubmitR = do
       yesod    <- getYesod
       liftIO $ runProcess (honey yesod) $ solveRequest (comb yesod) (Problem problemType (Instance . fromStrict . unTextarea $ problemInstance)) mvar 15000000
       solution <- liftIO $ takeMVar mvar
-      now      <- liftIO getCurrentTime
-      let duration = diffUTCTime now timestamp
-      defaultLayout $ solutionWidget solution >> durationWidget duration
+      now      <- liftIO getCPUTime
+      let duration = now - timestamp
+      defaultLayout $ solutionWidget solution >> durationWidget (fromIntegral duration / fromIntegral cpuTimePrecision)
     _ -> redirect SubmitR
 
 problemSubmitForm :: Form ProblemInput
 problemSubmitForm = renderDivs $ ProblemInput
   <$> areq textareaField "Problem: " Nothing
   <*> areq (selectFieldList problemTypes) "Type: " Nothing
-  <*> lift (liftIO getCurrentTime)
+  <*> lift (liftIO getCPUTime)
     where
       problemTypes :: [(Text, ProblemType)]
       problemTypes = map (pack . show &&& id) [minBound..maxBound]
@@ -76,5 +78,5 @@ solutionWidget reason = do
     <pre>#{show reason}
   |]
 
-durationWidget :: NominalDiffTime -> Widget
-durationWidget duration = [whamlet|This calculation took #{show duration}.|]
+durationWidget :: Double -> Widget
+durationWidget duration = [whamlet|This calculation took #{show duration}s.|]
