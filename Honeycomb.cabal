@@ -1,5 +1,5 @@
 name:              Honeycomb
-version:           0.0.0
+version:           0.0.1
 cabal-version:     >= 1.8
 build-type:        Simple
 
@@ -71,7 +71,7 @@ library
                  , wai-logger                    >= 2.1        && < 2.2
                  , distributed-process           >= 0.4        && < 0.5
                  , distributed-process-simplelocalnet >= 0.2   && < 0.3
-                 , Hive
+                 , Hive                          >= 0.1.0.1    && <= 0.1.0.3
                  , time
 
 executable         Honeycomb
