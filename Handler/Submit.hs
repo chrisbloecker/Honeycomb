@@ -14,7 +14,7 @@ import Control.Distributed.Process.Node hiding (newLocalNode)
 
 import Import
 
-import Hive.Types  (Problem (..), ProblemType (..), Instance (..), Solution (..))
+import Hive.Types  (Problem (..), ProblemType (..), Instance (..), Solution (..), seconds, milliseconds)
 import Hive.Client (solveRequest)
 
 -------------------------------------------------------------------------------
@@ -42,7 +42,7 @@ postSubmitR = do
     FormSuccess (ProblemInput problemInstance problemType timestamp) -> do
       mvar     <- liftIO newEmptyMVar
       yesod    <- getYesod
-      liftIO $ runProcess (honey yesod) $ solveRequest (comb yesod) (Problem problemType (Instance . fromStrict . unTextarea $ problemInstance)) mvar 15000000
+      liftIO $ runProcess (honey yesod) $ solveRequest (comb yesod) (Problem problemType (Instance . fromStrict . unTextarea $ problemInstance)) mvar (milliseconds 500) (seconds 15)
       solution <- liftIO $ takeMVar mvar
       now      <- liftIO getCurrentTime
       let duration = diffUTCTime now timestamp

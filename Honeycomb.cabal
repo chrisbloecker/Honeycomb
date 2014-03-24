@@ -71,7 +71,7 @@ library
                  , wai-logger                    >= 2.1        && < 2.2
                  , distributed-process           >= 0.4        && < 0.5
                  , distributed-process-simplelocalnet >= 0.2   && < 0.3
-                 , Hive                          >= 0.1.0.1    && <= 0.1.0.3
+                 , Hive                          >= 0.1.0.3
                  , time
 
 executable         Honeycomb
