@@ -21,8 +21,9 @@ import Data.Default (def)
 import Yesod.Core.Types (loggerSet, Logger (Logger))
 
 -- Imports for CloudHaskell
-import Control.Distributed.Process.Backend.SimpleLocalnet
-import Control.Distributed.Process.Node hiding (newLocalNode)
+import Network.Transport.TCP (createTransport, defaultTCPParameters)
+import Control.Distributed.Process.Node (newLocalNode, initRemoteTable)
+import Hive.RemoteTable (remoteTable)
 
 -- Import all relevant handler modules here.
 -- Don't forget to add new modules to your cabal file!
@@ -79,12 +80,11 @@ makeFoundation conf = do
     _ <- forkIO updateLoop
 
     -- create the local honey node which will be used to talk to Hive
-    context <- initializeBackend "localhost" "52025" initRemoteTable
-    node    <- newLocalNode context
-
-    let logger = Yesod.Core.Types.Logger loggerSet' getter
-        foundation = App conf s manager logger context node
-
+    Right transport <- createTransport "localhost" "52052" defaultTCPParameters
+    node            <- newLocalNode transport (remoteTable initRemoteTable)
+    
+    let logger     = Yesod.Core.Types.Logger loggerSet' getter
+        foundation = App conf s manager logger node
     return foundation
 
 -- for yesod devel

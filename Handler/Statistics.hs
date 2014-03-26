@@ -6,7 +6,7 @@ import Control.Concurrent.MVar (newEmptyMVar, takeMVar)
 import Control.Distributed.Process.Node (runProcess)
 
 import Hive.Client (getStatistics)
-import Hive.Types  (Statistics (..), seconds, milliseconds)
+import Hive.Types  (Statistics (..), seconds)
 
 -------------------------------------------------------------------------------
 
@@ -14,7 +14,8 @@ getStatisticsR :: Handler Html
 getStatisticsR = do
   mvar  <- liftIO newEmptyMVar
   yesod <- getYesod
-  liftIO $ runProcess (honey yesod) $ getStatistics (comb yesod) mvar (milliseconds 500) (seconds 5)
+  extra <- getExtra
+  liftIO $ runProcess (honey yesod) $ getStatistics (extraQueenHost extra) (extraQueenPort extra) mvar (seconds 5)
   stats <- liftIO $ takeMVar mvar
   defaultLayout $ do
     setTitle "Statistics"

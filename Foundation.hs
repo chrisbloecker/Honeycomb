@@ -13,10 +13,10 @@ import Settings (widgetFile, Extra (..))
 import Text.Jasmine (minifym)
 import Text.Hamlet (hamletFile)
 import Yesod.Core.Types (Logger)
+import Control.Applicative ((<$>))
 
 -- For the honey and the comb
 import Types (HivePortal)
-import Control.Distributed.Process.Backend.SimpleLocalnet (Backend)
 
 -- | The site argument for your application. This can be a good place to
 -- keep settings and values requiring initialization before your application
@@ -27,7 +27,6 @@ data App = App
     , getStatic :: Static -- ^ Settings for static file serving.
     , httpManager :: Manager
     , appLogger :: Logger
-    , comb :: Backend
     , honey :: HivePortal
     }
 
@@ -52,7 +51,7 @@ instance Yesod App where
 
     -- Store session data on the client in encrypted cookies,
     -- default session idle timeout is 120 minutes
-    makeSessionBackend _ = fmap Just $ defaultClientSessionBackend
+    makeSessionBackend _ = Just <$> defaultClientSessionBackend
         (120 * 60) -- 120 minutes
         "config/client_session_key.aes"
 
