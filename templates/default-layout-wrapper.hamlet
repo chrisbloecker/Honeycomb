@@ -23,6 +23,8 @@ $newline never
         <script>
           document.documentElement.className = document.documentElement.className.replace(/\bno-js\b/,'js');
     <body>
+        <div class="banner">
+          <img width=100% src=@{StaticR img_honeycomb_jpg}/>
         <div class="container">
             <header>
             <div id="main" role="main">

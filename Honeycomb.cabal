@@ -1,5 +1,5 @@
 name:              Honeycomb
-version:           0.1.1.0
+version:           0.1.1.2
 cabal-version:     >= 1.8
 build-type:        Simple
 
@@ -22,6 +22,7 @@ library
                      Handler.Submit
                      Handler.Statistics
     other-modules:   Types
+                     Widget.Duration
 
     if flag(dev) || flag(library-only)
         cpp-options:   -DDEVELOPMENT

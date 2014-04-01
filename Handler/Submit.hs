@@ -3,7 +3,7 @@
 module Handler.Submit
   where
 
-import Data.Time      (UTCTime, NominalDiffTime, getCurrentTime, diffUTCTime)
+import Data.Time      (UTCTime, getCurrentTime, diffUTCTime)
 import Data.Text      (pack)
 import Data.Text.Lazy (fromStrict)
 
@@ -14,8 +14,10 @@ import Control.Distributed.Process.Node hiding (newLocalNode)
 
 import Import
 
-import Hive.Types  (Problem (..), ProblemType (..), Instance (..), Solution (..), seconds)
+import Hive.Types  (Problem (..), ProblemType (..), Instance (..), Solution (..), minutes)
 import Hive.Client (solveRequest)
+
+import Widget.Duration (durationWidget)
 
 -------------------------------------------------------------------------------
 
@@ -43,7 +45,7 @@ postSubmitR = do
       mvar     <- liftIO newEmptyMVar
       yesod    <- getYesod
       extra    <- getExtra
-      liftIO $ runProcess (honey yesod) $ solveRequest (extraQueenHost extra) (extraQueenPort extra) (Problem problemType (Instance . fromStrict . unTextarea $ problemInstance)) mvar (seconds 15)
+      liftIO $ runProcess (honey yesod) $ solveRequest (extraQueenHost extra) (extraQueenPort extra) (Problem problemType (Instance . fromStrict . unTextarea $ problemInstance)) mvar (minutes 5)
       solution <- liftIO $ takeMVar mvar
       now      <- liftIO getCurrentTime
       let duration = diffUTCTime now timestamp
@@ -76,6 +78,3 @@ solutionWidget reason = do
     Sorry, we couldn't find any solution. The reason is:
     <pre>#{show reason}
   |]
-
-durationWidget :: NominalDiffTime -> Widget
-durationWidget duration = [whamlet|This calculation took #{show duration}.|]

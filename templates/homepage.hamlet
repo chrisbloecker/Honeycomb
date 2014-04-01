@@ -1,3 +1,6 @@
 <h1>_{MsgHello}
 
-\<a href=@{SubmitR}>Submit</a> a problem
+<div>
+  <a href=@{SubmitR}>Submit</a> a problem
+  <br>
+  <a href=@{StatisticsR}>Statistics</a>
