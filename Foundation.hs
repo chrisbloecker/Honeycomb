@@ -3,20 +3,23 @@ module Foundation where
 import Prelude
 import Yesod
 import Yesod.Static
+import Yesod.Auth
+import Yesod.Auth.BrowserId
 import Yesod.Default.Config
 import Yesod.Default.Util (addStaticContentExternal)
-import Network.HTTP.Conduit (Manager)
+import Network.HTTP.Client.Conduit (Manager, HasHttpManager (getHttpManager))
 import qualified Settings
 import Settings.Development (development)
+import qualified Database.Persist
 import Settings.StaticFiles
+import Database.Persist.MongoDB hiding (master)
 import Settings (widgetFile, Extra (..))
+import Model
 import Text.Jasmine (minifym)
 import Text.Hamlet (hamletFile)
 import Yesod.Core.Types (Logger)
-import Control.Applicative ((<$>))
 
--- For the honey and the comb
-import Types (HivePortal)
+import Types
 
 -- | The site argument for your application. This can be a good place to
 -- keep settings and values requiring initialization before your application
@@ -25,10 +28,15 @@ import Types (HivePortal)
 data App = App
     { settings :: AppConfig DefaultEnv Extra
     , getStatic :: Static -- ^ Settings for static file serving.
+    , connPool :: Database.Persist.PersistConfigPool Settings.PersistConf -- ^ Database connection pool.
     , httpManager :: Manager
+    , persistConfig :: Settings.PersistConf
     , appLogger :: Logger
     , honey :: HivePortal
     }
+
+instance HasHttpManager App where
+    getHttpManager = httpManager
 
 -- Set up i18n messages. See the message folder.
 mkMessage "App" "messages" "en"
@@ -51,8 +59,8 @@ instance Yesod App where
 
     -- Store session data on the client in encrypted cookies,
     -- default session idle timeout is 120 minutes
-    makeSessionBackend _ = Just <$> defaultClientSessionBackend
-        (120 * 60) -- 120 minutes
+    makeSessionBackend _ = fmap Just $ defaultClientSessionBackend
+        120    -- timeout in minutes
         "config/client_session_key.aes"
 
     defaultLayout widget = do
@@ -79,6 +87,16 @@ instance Yesod App where
         Just $ uncurry (joinPath y (Settings.staticRoot $ settings y)) $ renderRoute s
     urlRenderOverride _ _ = Nothing
 
+    -- The page to be redirected to when authentication is required.
+    authRoute _ = Just $ AuthR LoginR
+
+    -- Routes not requiring authenitcation.
+    isAuthorized (AuthR _) _ = return Authorized
+    isAuthorized FaviconR _ = return Authorized
+    isAuthorized RobotsR _ = return Authorized
+    -- Default to Authorized for now.
+    isAuthorized _ _ = return Authorized
+
     -- This function creates static content files in the static folder
     -- and names them based on a hash of their content. This allows
     -- expiration dates to be set far in the future without worry of
@@ -100,6 +118,34 @@ instance Yesod App where
         development || level == LevelWarn || level == LevelError
 
     makeLogger = return . appLogger
+
+-- How to run database actions.
+instance YesodPersist App where
+    type YesodPersistBackend App = Action
+    runDB = defaultRunDB persistConfig connPool
+
+instance YesodAuth App where
+    type AuthId App = UserId
+
+    -- Where to send a user after successful login
+    loginDest _ = HomeR
+    -- Where to send a user after logout
+    logoutDest _ = HomeR
+
+    getAuthId creds = runDB $ do
+        x <- getBy $ UniqueUser $ credsIdent creds
+        case x of
+            Just (Entity uid _) -> return $ Just uid
+            Nothing -> do
+                fmap Just $ insert User
+                    { userIdent = credsIdent creds
+                    , userPassword = Nothing
+                    }
+
+    -- You can add other plugins like BrowserID, email or OAuth here
+    authPlugins _ = [authBrowserId def]
+
+    authHttpManager = httpManager
 
 -- This instance is required to use forms. You can modify renderMessage to
 -- achieve customized and internationalized form validation messages.

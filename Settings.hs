@@ -8,6 +8,7 @@ module Settings where
 import Prelude
 import Text.Shakespeare.Text (st)
 import Language.Haskell.TH.Syntax
+import Database.Persist.MongoDB (MongoConf)
 import Yesod.Default.Config
 import Yesod.Default.Util
 import Data.Text (Text)
@@ -16,6 +17,9 @@ import Control.Applicative
 import Settings.Development
 import Data.Default (def)
 import Text.Hamlet
+
+-- | Which Persistent backend this site is using.
+type PersistConf = MongoConf
 
 -- Static setting below. Changing these requires a recompile
 
@@ -62,15 +66,15 @@ widgetFile = (if development then widgetFileReload
               widgetFileSettings
 
 data Extra = Extra
-    { extraCopyright :: Text
-    , extraAnalytics :: Maybe Text -- ^ Google Analytics
-    , extraQueenHost :: String
-    , extraQueenPort :: String
+    { extraCopyright  :: Text
+    , extraAnalytics  :: Maybe Text -- ^ Google Analytics
+    , extraMasterHost :: String
+    , extraMasterPort :: String
     } deriving Show
 
 parseExtra :: DefaultEnv -> Object -> Parser Extra
 parseExtra _ o = Extra
     <$> o .:  "copyright"
     <*> o .:? "analytics"
-    <*> o .:  "queenHost"
-    <*> o .:  "queenPort"
+    <*> o .:  "masterHost"
+    <*> o .:  "masterPort"

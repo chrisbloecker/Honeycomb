@@ -14,7 +14,7 @@ import Control.Distributed.Process.Node hiding (newLocalNode)
 
 import Import
 
-import Hive.Types  (Problem (..), ProblemType (..), Instance (..), Solution (..), minutes)
+import Hive.Types  (Problem (..), ProblemType (..), Instance (..), Ticket (unTicket))
 import Hive.Client (solveRequest)
 
 import Widget.Duration (durationWidget)
@@ -45,11 +45,11 @@ postSubmitR = do
       mvar     <- liftIO newEmptyMVar
       yesod    <- getYesod
       extra    <- getExtra
-      liftIO $ runProcess (honey yesod) $ solveRequest (extraQueenHost extra) (extraQueenPort extra) (Problem problemType (Instance . fromStrict . unTextarea $ problemInstance)) mvar (minutes 5)
-      solution <- liftIO $ takeMVar mvar
+      liftIO $ runProcess (honey yesod) $ solveRequest (extraMasterHost extra) (extraMasterPort extra) (Problem problemType (Instance . fromStrict . unTextarea $ problemInstance)) mvar
+      ticket   <- liftIO $ takeMVar mvar
       now      <- liftIO getCurrentTime
       let duration = diffUTCTime now timestamp
-      defaultLayout $ solutionWidget solution >> durationWidget duration
+      defaultLayout $ ticketWidget ticket >> durationWidget duration
     _ -> redirect SubmitR
 
 problemSubmitForm :: Form ProblemInput
@@ -61,20 +61,12 @@ problemSubmitForm = renderDivs $ ProblemInput
       problemTypes :: [(Text, ProblemType)]
       problemTypes = map (pack . show &&& id) [minBound..maxBound]
 
-solutionWidget :: Solution -> Widget
-solutionWidget (Solution {..}) = do
-  setTitle "Solution found!"
+ticketWidget :: Ticket -> Widget
+ticketWidget ticket = do
+  let ticketNumber = unTicket ticket
+  setTitle "Ticket received!"
   [whamlet|
-    <h2>Solution found!
-    The bees have found a solution for your problem, it is:
-    <pre>#{show unSolution}
-    With the value:
-    <pre>#{show unValue}
-  |]
-solutionWidget reason = do
-  setTitle "No solution found :("
-  [whamlet|
-    <h2>No solution found :(
-    Sorry, we couldn't find any solution. The reason is:
-    <pre>#{show reason}
+    <h2>Ticket received!
+    Ticket received:
+    <pre>#{show ticketNumber}
   |]

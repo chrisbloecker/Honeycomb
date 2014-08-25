@@ -6,6 +6,8 @@ module Application
     ) where
 
 import Import
+import Settings
+import Yesod.Auth
 import Yesod.Default.Config
 import Yesod.Default.Main
 import Yesod.Default.Handlers
@@ -13,8 +15,8 @@ import Network.Wai.Middleware.RequestLogger
     ( mkRequestLogger, outputFormat, OutputFormat (..), IPAddrSource (..), destination
     )
 import qualified Network.Wai.Middleware.RequestLogger as RequestLogger
-import Network.HTTP.Conduit (newManager, conduitManagerSettings)
-import Control.Concurrent (forkIO, threadDelay)
+import qualified Database.Persist
+import Network.HTTP.Client.Conduit (newManager)
 import System.Log.FastLogger (newStdoutLoggerSet, defaultBufSize)
 import Network.Wai.Logger (clockDateCacher)
 import Data.Default (def)
@@ -29,7 +31,6 @@ import Hive.RemoteTable (remoteTable)
 -- Don't forget to add new modules to your cabal file!
 import Handler.Home
 import Handler.Submit
-import Handler.Statistics
 
 -- This line actually creates our YesodDispatch instance. It is the second half
 -- of the call to mkYesodData which occurs in Foundation.hs. Please see the
@@ -56,35 +57,29 @@ makeApplication conf = do
     -- Create the WAI application and apply middlewares
     app <- toWaiAppPlain foundation
     let logFunc = messageLoggerSource foundation (appLogger foundation)
-
-    return (logWare app, logFunc)
+    return (logWare $ defaultMiddlewaresNoLogging app, logFunc)
 
 -- | Loads up any necessary settings, creates your foundation datatype, and
 -- performs some initialization.
 makeFoundation :: AppConfig DefaultEnv Extra -> IO App
 makeFoundation conf = do
-    manager <- newManager conduitManagerSettings
+    manager <- newManager
     s <- staticSite
+    dbconf <- withYamlEnvironment "config/mongoDB.yml" (appEnv conf)
+              Database.Persist.loadConfig >>=
+              Database.Persist.applyEnv
+    p <- Database.Persist.createPoolConfig (dbconf :: Settings.PersistConf)
 
     loggerSet' <- newStdoutLoggerSet defaultBufSize
-    (getter, updater) <- clockDateCacher
+    (getter, _) <- clockDateCacher
 
-    -- If the Yesod logger (as opposed to the request logger middleware) is
-    -- used less than once a second on average, you may prefer to omit this
-    -- thread and use "(updater >> getter)" in place of "getter" below.  That
-    -- would update the cache every time it is used, instead of every second.
-    let updateLoop = do
-            threadDelay 1000000
-            updater
-            updateLoop
-    _ <- forkIO updateLoop
-
-    -- create the local honey node which will be used to talk to Hive
+-- create the local honey node which will be used to talk to Hive
     Right transport <- createTransport "localhost" "52052" defaultTCPParameters
     node            <- newLocalNode transport (remoteTable initRemoteTable)
-    
-    let logger     = Yesod.Core.Types.Logger loggerSet' getter
-        foundation = App conf s manager logger node
+
+    let logger = Yesod.Core.Types.Logger loggerSet' getter
+        foundation = App conf s p manager dbconf logger node
+
     return foundation
 
 -- for yesod devel

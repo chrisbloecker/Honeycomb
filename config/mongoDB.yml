@@ -1,0 +1,24 @@
+Default: &defaults
+  user: Honeycomb
+  password: Honeycomb
+  host: localhost
+  database: Honeycomb
+  connections: 10
+
+Development:
+  <<: *defaults
+
+Testing:
+  database: Honeycomb_test
+  <<: *defaults
+
+Staging:
+  database: Honeycomb_staging
+  connections: 100
+  <<: *defaults
+
+Production:
+  database: Honeycomb_production
+  connections: 100
+  host: localhost
+  <<: *defaults

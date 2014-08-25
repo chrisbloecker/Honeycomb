@@ -2,5 +2,3 @@
 
 <div>
   <a href=@{SubmitR}>Submit</a> a problem
-  <br>
-  <a href=@{StatisticsR}>Statistics</a>
