@@ -21,6 +21,8 @@ library
                      Settings.Development
                      Handler.Home
                      Handler.Submit
+                     Handler.History
+                     Handler.Ticket
     other-modules:   Types
                      Widget.Duration
 

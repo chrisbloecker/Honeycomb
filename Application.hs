@@ -31,6 +31,8 @@ import Hive.RemoteTable (remoteTable)
 -- Don't forget to add new modules to your cabal file!
 import Handler.Home
 import Handler.Submit
+import Handler.History
+import Handler.Ticket
 
 -- This line actually creates our YesodDispatch instance. It is the second half
 -- of the call to mkYesodData which occurs in Foundation.hs. Please see the
