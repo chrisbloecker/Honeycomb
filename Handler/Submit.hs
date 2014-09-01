@@ -14,14 +14,14 @@ import Control.Distributed.Process.Node hiding (newLocalNode)
 
 import Import
 
-import Hive.Types  (Problem (..), ProblemType (..), Instance (..), Ticket (unTicket))
+import Hive.Types  (Problem (..), ProblemType (..), Ticket (unTicket))
 import Hive.Client (solveRequest)
 
 import Widget.Duration (durationWidget)
 
 -------------------------------------------------------------------------------
 
-data ProblemInput = ProblemInput Textarea ProblemType UTCTime      deriving (Eq, Show)
+data ProblemInput = ProblemInput ProblemType Textarea UTCTime  deriving (Eq, Show)
 
 -------------------------------------------------------------------------------
 
@@ -41,21 +41,22 @@ postSubmitR :: Handler Html
 postSubmitR = do
   ((result, _widget), _enctype) <- runFormPost problemSubmitForm
   case result of
-    FormSuccess (ProblemInput problemInstance problemType timestamp) -> do
+    FormSuccess (ProblemInput problemType problemInstance timestamp) -> do
       mvar     <- liftIO newEmptyMVar
       yesod    <- getYesod
       extra    <- getExtra
-      liftIO $ runProcess (honey yesod) $ solveRequest (extraMasterHost extra) (extraMasterPort extra) (Problem problemType (Instance . fromStrict . unTextarea $ problemInstance)) mvar
+      liftIO $ runProcess (honey yesod) $ solveRequest (extraMasterHost extra) (extraMasterPort extra) (Problem problemType (fromStrict . unTextarea $ problemInstance)) mvar
       ticket   <- liftIO $ takeMVar mvar
       now      <- liftIO getCurrentTime
       let duration = diffUTCTime now timestamp
       defaultLayout $ ticketWidget ticket >> durationWidget duration
+      redirect (TicketR . unTicket $ ticket)
     _ -> redirect SubmitR
 
 problemSubmitForm :: Form ProblemInput
 problemSubmitForm = renderDivs $ ProblemInput
-  <$> areq textareaField "Problem: " Nothing
-  <*> areq (selectFieldList problemTypes) "Type: " Nothing
+  <$> areq (selectFieldList problemTypes) "Problem Type: " Nothing
+  <*> areq textareaField "Problem Instance: " Nothing
   <*> lift (liftIO getCurrentTime)
     where
       problemTypes :: [(Text, ProblemType)]

@@ -2,3 +2,5 @@
 
 <div>
   <a href=@{SubmitR}>Submit</a> a problem
+  <br>
+  Show the <a href=@{LatestHistoryR}>history</a>

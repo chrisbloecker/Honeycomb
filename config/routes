@@ -8,3 +8,4 @@
 /submit SubmitR GET POST
 /history/from/#Int/to/#Int HistoryR GET
 /ticket/#Int TicketR GET
+/history LatestHistoryR GET
