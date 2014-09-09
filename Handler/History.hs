@@ -12,7 +12,8 @@ getHistoryR from to = do
   mvar    <- liftIO newEmptyMVar
   yesod   <- getYesod
   extra   <- getExtra
-  liftIO $ runProcess (honey yesod) $ getHistory (extraMasterHost extra) (extraMasterPort extra) from to mvar
+  let from' = max 0 from
+  liftIO $ runProcess (honey yesod) $ getHistory (extraMasterHost extra) (extraMasterPort extra) from' to mvar
   history <- liftIO $ takeMVar mvar
   defaultLayout $ do
     setTitle "History"
@@ -44,5 +45,5 @@ getHistoryR from to = do
                 $else
                   No
         <br>
-        #{show from}-#{show to}
+        #{show from'}-#{show to}
     |]
