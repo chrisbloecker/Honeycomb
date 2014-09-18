@@ -1,9 +1,10 @@
 module Handler.History where
 
 import Import
+import Control.Arrow ((&&&))
 import Control.Distributed.Process.Node
 import Control.Concurrent.MVar (newEmptyMVar, takeMVar)
-import Hive.Types  (Entry (..), Problem (..), Ticket (..))
+import Hive.Types  (Entry (..), Problem (..), Ticket (..), diffTime)
 import Hive.Client (getHistory)
 import Data.Maybe  (isJust)
 
@@ -15,6 +16,7 @@ getHistoryR from to = do
   let from' = max 0 from
   liftIO $ runProcess (honey yesod) $ getHistory (extraMasterHost extra) (extraMasterPort extra) from' to mvar
   history <- liftIO $ takeMVar mvar
+  let history' = map (id &&& toDuration) history
   defaultLayout $ do
     setTitle "History"
     toWidget [lucius| 
@@ -33,7 +35,9 @@ getHistoryR from to = do
               <b>Problem type
             <th>
               <b>Solved
-          $forall entry <- history
+            <th>
+              <b>Time
+          $forall (entry, duration) <- history'
             <tr>
               <td>
                 <a href=@{TicketR (unTicket $ ticket entry)}>#{show $ unTicket $ ticket entry}
@@ -44,6 +48,15 @@ getHistoryR from to = do
                   Yes
                 $else
                   No
+              <td>
+                $if isJust (solution entry)
+                  #{duration}
         <br>
         #{show from'}-#{show to}
     |]
+
+toDuration :: Entry -> String
+toDuration entry =
+  case endTime entry of
+    Nothing -> "---"
+    Just eT -> show $ diffTime (startTime entry) eT
