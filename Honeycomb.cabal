@@ -23,7 +23,7 @@ library
                      Handler.Submit
                      Handler.History
                      Handler.Ticket
-                     Handler.LatestHistory
+                     Handler.Rerun
     other-modules:   Types
                      Widget.Duration
 

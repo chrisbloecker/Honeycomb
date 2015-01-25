@@ -1,6 +1,12 @@
 <h1>_{MsgHello}
 
 <div>
-  <a href=@{SubmitR}>Submit</a> a problem
-  <br>
-  Show the <a href=@{LatestHistoryR}>history</a>
+  <ul>
+    <li>
+      <a href=@{SubmitR}>Submit</a> a problem
+    <li>
+      <a href=@{LatestHistoryR}>Show</a> the history
+    <li>
+      <a href=@{ExportHistoryR}>Export</a> the history
+    <li>
+      <a href=@{ClearHistoryR}>Clear</> the history

@@ -32,6 +32,8 @@ getTicketR ticketNr = do
           <pre>
             #{show $ problemType p}
           <h4>Instance
+          <h6>
+            <a href=@{RerunR ticketNr}>Rerun input
           <pre>
             #{problemInstance p}
           <h3>Solution

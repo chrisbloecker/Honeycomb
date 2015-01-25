@@ -32,8 +32,8 @@ $newline never
             <hr>
             <footer>
                 #{extraCopyright $ appExtra $ settings master}
-        <div class="bottm" style="bottom:0px; width:100%">
-          <img width=100% src=@{StaticR img_honeycombBottom_jpg}/>
+<!--        <div class="bottm" style="bottom:0px; width:100%">
+          <img width=100% src=@{StaticR img_honeycombBottom_jpg}/>-->
 
         $maybe analytics <- extraAnalytics $ appExtra $ settings master
             <script>

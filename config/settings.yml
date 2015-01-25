@@ -4,7 +4,7 @@ Default: &defaults
   approot: "http://localhost:3000"
   masterHost: "192.168.0.14"
   masterPort: "42000"
-  copyright: Copyright (c) 2014 Christopher Blöcker. All rights reserved
+  copyright: Copyright (c) 2014-2015 Christopher Blöcker. All rights reserved
   #analytics: UA-YOURCODE
 
 Development:

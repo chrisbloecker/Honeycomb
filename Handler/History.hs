@@ -5,8 +5,21 @@ import Control.Arrow ((&&&))
 import Control.Distributed.Process.Node
 import Control.Concurrent.MVar (newEmptyMVar, takeMVar)
 import Hive.Types  (Entry (..), Problem (..), Ticket (..), diffTime)
-import Hive.Client (getHistory)
+import Hive.Client (getHistory, clearHistory, getLatestTicket)
 import Data.Maybe  (isJust)
+import Data.Aeson  (encode)
+import Data.Text.Lazy.Encoding (decodeUtf8)
+import Yesod.Core.Json
+
+getLatestHistoryR :: Handler Html
+getLatestHistoryR = do
+  mvar  <- liftIO newEmptyMVar
+  yesod <- getYesod
+  extra <- getExtra
+  liftIO $ runProcess (honey yesod) $ getLatestTicket (extraMasterHost extra) (extraMasterPort extra) mvar
+  latestTicket <- liftIO $ takeMVar mvar
+  let ticketNr = unTicket latestTicket
+  redirect $ HistoryR (max 0 (ticketNr - 30)) ticketNr
 
 getHistoryR :: Int -> Int -> Handler Html
 getHistoryR from to = do
@@ -37,6 +50,8 @@ getHistoryR from to = do
               <b>Solved
             <th>
               <b>Time
+            <th>
+              <b>Rerun
           $forall (entry, duration) <- history'
             <tr>
               <td>
@@ -51,6 +66,8 @@ getHistoryR from to = do
               <td>
                 $if isJust (solution entry)
                   #{duration}
+              <td>
+                <a href=@{RerunR (unTicket $ ticket entry)}>Rerun
         <br>
         #{show from'}-#{show to}
     |]
@@ -60,3 +77,41 @@ toDuration entry =
   case endTime entry of
     Nothing -> "---"
     Just eT -> show $ diffTime (startTime entry) eT
+
+getClearHistoryR :: Handler Html
+getClearHistoryR = do
+  defaultLayout
+    [whamlet|
+      <h2>Are you sure you want to clear the history?
+      <form method=post action=@{ClearHistoryR}>
+        <button>Yes
+        <a href=@{HomeR}>No
+    |]
+
+postClearHistoryR :: Handler Html
+postClearHistoryR = do
+  yesod <- getYesod
+  extra <- getExtra
+  liftIO $ runProcess (honey yesod) $ clearHistory (extraMasterHost extra) (extraMasterPort extra)
+  redirect HomeR
+
+getExportHistoryR :: Handler Value
+getExportHistoryR = do
+  latestTicketNrMvar  <- liftIO newEmptyMVar
+  yesod <- getYesod
+  extra <- getExtra
+
+  let gw   = honey yesod
+      ip   = extraMasterHost extra
+      port = extraMasterPort extra
+
+  liftIO $ runProcess gw $ getLatestTicket ip port latestTicketNrMvar
+  latestTicket <- liftIO $ takeMVar latestTicketNrMvar
+  let latestTicketNr = unTicket latestTicket
+
+  historyMvar <- liftIO newEmptyMVar
+  liftIO $ runProcess gw $ getHistory ip port 0 latestTicketNr historyMvar
+  history <- liftIO $ takeMVar historyMvar
+  let json = decodeUtf8 . encode $ history
+
+  returnJson history

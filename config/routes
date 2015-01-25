@@ -9,3 +9,6 @@
 /history/from/#Int/to/#Int HistoryR GET
 /ticket/#Int TicketR GET
 /history LatestHistoryR GET
+/rerun/#Int RerunR GET
+/history/clear ClearHistoryR GET POST
+/history/export ExportHistoryR GET
